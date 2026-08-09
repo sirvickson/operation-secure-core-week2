@@ -1,0 +1,10 @@
+# Security Reflection
+
+**1. Why is `DATABASE_URL` kept in `.env` instead of hardcoded in application code?**
+Hardcoding a database URL (which usually includes the username, password, host, and database name) bakes a secret directly into the source code, meaning anyone with repo access — or anyone who finds the code on GitHub, in a build artifact, or in version history — can read it. Storing it in `.env` keeps the credential out of source control and version history, lets each environment (dev, staging, production) use different values without changing code, and makes it easy to rotate the credential without a code deployment.
+
+**2. What happens if someone pushes `.env` to a public GitHub repo?**
+The secret becomes publicly visible immediately, and because Git preserves history, deleting the file in a later commit does *not* remove it — the credential still exists in the repo's commit history and can be found by anyone who clones or browses it. Automated bots actively scan public GitHub repos for exposed credentials like database URLs, API keys, and tokens, so exposure can be discovered and exploited within minutes, potentially leading to unauthorized database access, data theft, or a compromised production system.
+
+**3. What would you do in the first 30 minutes if you discovered a leaked secret?**
+First, rotate/revoke the exposed credential immediately (generate a new `DATABASE_URL` or password and update it wherever it's used) so the leaked value becomes useless. Next, remove the secret from the repo — delete it from the current code and, if needed, scrub it from Git history (e.g., with `git filter-repo` or BFG Repo-Cleaner) and force-push, then make the repo private if it shouldn't be public. Finally, check logs/audit trails for any unauthorized access during the exposure window, add the file to `.gitignore` to prevent recurrence, and notify the team so everyone is aware and can watch for suspicious activity.
